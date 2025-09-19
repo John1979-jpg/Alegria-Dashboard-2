@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis Táctico: Alegría vs Nuevos Defensores</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            font-size: clamp(1.8rem, 4vw, 3rem);
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header h2 {
+            font-size: clamp(1.2rem, 3vw, 2rem);
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        
+        .header p {
+            font-size: clamp(0.9rem, 2vw, 1.2rem);
+            opacity: 0.8;
+        }
+        
+        .warning-banner {
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .priority-banner {
+            background: linear-gradient(135deg, #26de81, #20bf6b);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            min-height: 400px;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+        
+        .card h3 {
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-size: clamp(1rem, 2.5vw, 1.4rem);
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+        
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 280px;
+            margin-top: 15px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+            opacity: 0.9;
+        }
+        
+        .defender-comparison {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+        
+        .defender-card {
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .critical { background: linear-gradient(135deg, #ff4757, #c44569); }
+        .vulnerable { background: linear-gradient(135deg, #ffa726, #ff7043); }
+        .weak { background: linear-gradient(135deg, #45b7d1, #96c93d); }
+        .solid { background: linear-gradient(135deg, #26de81, #20bf6b); }
+        
+        .defender-name {
+            font-size: clamp(1rem, 2.5vw, 1.4rem);
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        
+        .defender-stats {
+            display: grid;
+            gap: 8px;
+        }
+        
+        .stat-row {
+            background: rgba(255,255,255,0.2);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .priority-indicator {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(255,255,255,0.3);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        
+        .sample-warning {
+            background: #ff6b6b;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 0.7rem;
+            margin-top: 8px;
+            display: inline-block;
+        }
+        
+        .confidence-high {
+            background: #26de81;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 0.7rem;
+            margin-top: 8px;
+            display: inline-block;
+        }
+        
+        .insight {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 15px 0;
+        }
+        
+        .insight h4 {
+            font-size: clamp(1.2rem, 3vw, 1.6rem);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .recommendations {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .recommendation {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #ffd700;
+        }
+        
+        .recommendation strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .tactical-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .tactical-card {
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            position: relative;
+        }
+        
+        .priority-high {
+            background: linear-gradient(135deg, #ff4757, #c44569);
+        }
+        
+        .priority-medium {
+            background: linear-gradient(135deg, #ffa726, #ff7043);
+        }
+        
+        .priority-low {
+            background: linear-gradient(135deg, #45b7d1, #96c93d);
+        }
+        
+        .priority-lowest {
+            background: linear-gradient(135deg, #26de81, #20bf6b);
+        }
+        
+        .tactical-card h4 {
+            font-size: clamp(1rem, 2.5vw, 1.3rem);
+            margin-bottom: 10px;
+        }
+        
+        .tactical-card .target-name {
+            font-size: clamp(1.4rem, 3vw, 2rem);
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        
+        .tactical-list {
+            text-align: left;
+            margin-top: 15px;
+        }
+        
+        .tactical-list p {
+            margin-bottom: 8px;
+            font-size: clamp(0.85rem, 2vw, 1rem);
+        }
+        
+        .key-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin: 15px 0;
+        }
+        
+        .metric-card {
+            background: rgba(255,255,255,0.95);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .metric-title {
+            font-size: clamp(0.7rem, 1.8vw, 0.9rem);
+            color: #666;
+            margin-bottom: 6px;
+        }
+        
+        .metric-value {
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .execution-summary {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+        
+        .execution-summary h3 {
+            color: white;
+            border-bottom: 2px solid white;
+            margin-bottom: 20px;
+        }
+        
+        .execution-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .execution-card {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .execution-card h4 {
+            color: white;
+            margin-bottom: 12px;
+        }
+        
+        .execution-card p {
+            font-size: 0.95rem;
+            line-height: 1.4;
+            margin-bottom: 6px;
+        }
+        
+        /* Responsive Design Completo */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .chart-container {
+                height: 200px;
+            }
+            
+            .defender-comparison {
+                grid-template-columns: 1fr;
+            }
+            
+            .recommendations {
+                grid-template-columns: 1fr;
+            }
+            
+            .tactical-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .key-metrics {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            
+            .execution-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .card {
+                min-height: auto;
+                padding: 12px;
+                margin-bottom: 10px;
+            }
+            
+            .header {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .warning-banner, .priority-banner {
+                padding: 12px;
+                margin-bottom: 15px;
+                font-size: 0.9rem;
+            }
+            
+            .defender-card {
+                padding: 12px;
+                margin-bottom: 10px;
+            }
+            
+            .tactical-card {
+                padding: 15px;
+                margin-bottom: 10px;
+            }
+            
+            .tactical-list p {
+                font-size: 0.85rem;
+                margin-bottom: 6px;
+            }
+            
+            .insight {
+                padding: 15px;
+                margin: 10px 0;
+            }
+            
+            .recommendation {
+                padding: 12px;
+                margin-bottom: 8px;
+            }
+            
+            .execution-summary {
+                padding: 15px;
+                margin-top: 15px;
+            }
+            
+            .execution-card {
+                padding: 12px;
+                margin-bottom: 8px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            
+            .stat-item {
+                padding: 10px;
+            }
+            
+            .stat-value {
+                font-size: 1.2rem;
+            }
+            
+            .stat-label {
+                font-size: 0.7rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 8px;
+            }
+            
+            .key-metrics {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+            
+            .chart-container {
+                height: 180px;
+            }
+            
+            .card {
+                padding: 10px;
+            }
+            
+            .header {
+                padding: 12px;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .header h2 {
+                font-size: 1.1rem;
+            }
+            
+            .header p {
+                font-size: 0.85rem;
+            }
+            
+            .defender-name {
+                font-size: 1.1rem;
+            }
+            
+            .stat-row {
+                font-size: 0.8rem;
+                padding: 5px 8px;
+            }
+            
+            .tactical-card .target-name {
+                font-size: 1.3rem;
+            }
+            
+            .tactical-list p {
+                font-size: 0.8rem;
+            }
+            
+            .metric-card {
+                padding: 8px;
+            }
+            
+            .metric-title {
+                font-size: 0.7rem;
+            }
+            
+            .metric-value {
+                font-size: 1rem;
+            }
+            
+            .recommendation {
+                padding: 10px;
+            }
+            
+            .recommendation strong {
+                font-size: 0.95rem;
+            }
+            
+            .execution-card {
+                padding: 10px;
+            }
+            
+            .execution-card h4 {
+                font-size: 0.95rem;
+            }
+            
+            .execution-card p {
+                font-size: 0.8rem;
+            }
+        }
+        
+        /* Touch-friendly on mobile */
+        @media (hover: none) {
+            .card:hover {
+                transform: none;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            }
+            
+            .card {
+                transition: none;
+            }
+        }
+        
+        /* Landscape mobile adjustments */
+        @media (max-width: 896px) and (orientation: landscape) {
+            .chart-container {
+                height: 160px;
+            }
+            
+            .header {
+                padding: 10px;
+            }
+            
+            .grid {
+                gap: 8px;
+            }
+        }
+        
+        /* Very small screens */
+        @media (max-width: 320px) {
+            .container {
+                padding: 5px;
+            }
+            
+            .card {
+                padding: 8px;
+                border-radius: 10px;
+            }
+            
+            .chart-container {
+                height: 150px;
+            }
+            
+            .defender-card, .tactical-card {
+                padding: 10px;
+            }
+            
+            .metric-card {
+                padding: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚽ Análisis Táctico Avanzado</h1>
+            <h2>J. Alegría vs 4 Defensores Clave</h2>
+            <p>Identificación de vulnerabilidades defensivas y plan de explotación táctico</p>
+        </div>
+        
+        <div class="priority-banner">
+            <strong>🎯 VULNERABILIDADES CRÍTICAS CONFIRMADAS:</strong> 
+            Vera (53.7%) y Guevara (54.8%) vs Alegría (24%) = Diferencias de +30 puntos. Centros sistemáticos muy efectivos.
+        </div>
+        
+        <div class="warning-banner">
+            <strong>⚠️ NOTA METODOLÓGICA:</strong> 
+            A. Vera tiene solo 10 partidos de muestra vs 20-21 de los demás. E. Gnemmi pierde 8.4 balones/partido.
+        </div>
+        
+        <div class="grid">
+            <!-- Perfil de Alegría -->
+            <div class="card">
+                <h3>🎯 Perfil Ofensivo - J. Alegría</h3>
+                <div class="key-metrics">
+                    <div class="metric-card">
+                        <div class="metric-title">Partidos Analizados</div>
+                        <div class="metric-value">119</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Goles/Partido</div>
+                        <div class="metric-value">0.32</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Precisión Tiro</div>
+                        <div class="metric-value">46%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Efectividad Aérea</div>
+                        <div class="metric-value">24.0%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Asistencias</div>
+                        <div class="metric-value">0.06</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Regates Exitosos</div>
+                        <div class="metric-value">55.7%</div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="alegriaProfile"></canvas>
+                </div>
+            </div>
+            
+            <!-- Análisis de Vulnerabilidades -->
+            <div class="card">
+                <h3>🛡️ Análisis de Vulnerabilidades Defensivas</h3>
+                <div class="defender-comparison">
+                    <div class="defender-card critical">
+                        <div class="priority-indicator">OBJETIVO 1</div>
+                        <div class="defender-name">A. Vera (LCB)</div>
+                        <div class="defender-stats">
+                            <div class="stat-row">
+                                <span>Duelos Aéreos:</span>
+                                <span>53.7% 🚨</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Duelos Terrestres:</span>
+                                <span>58.3%</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Balones Perdidos:</span>
+                                <span>6.6/partido</span>
+                            </div>
+                        </div>
+                        <div class="sample-warning">⚠️ Solo 10 partidos</div>
+                    </div>
+                    
+                    <div class="defender-card critical">
+                        <div class="priority-indicator">OBJETIVO 2</div>
+                        <div class="defender-name">D. Guevara (LCB)</div>
+                        <div class="defender-stats">
+                            <div class="stat-row">
+                                <span>Duelos Aéreos:</span>
+                                <span>54.8% 🚨</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Duelos Terrestres:</span>
+                                <span>58.2%</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Balones Perdidos:</span>
+                                <span>5.8/partido ✅</span>
+                            </div>
+                        </div>
+                        <div class="confidence-high">✅ 20 partidos confiables</div>
+                    </div>
+                    
+                    <div class="defender-card vulnerable">
+                        <div class="priority-indicator">OBJETIVO 3</div>
+                        <div class="defender-name">G. Villarreal (RCB)</div>
+                        <div class="defender-stats">
+                            <div class="stat-row">
+                                <span>Duelos Aéreos:</span>
+                                <span>64.4% ⚠️</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Duelos Terrestres:</span>
+                                <span>60.8%</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Balones Perdidos:</span>
+                                <span>6.6/partido</span>
+                            </div>
+                        </div>
+                        <div class="confidence-high">✅ 21 partidos confiables</div>
+                    </div>
+                    
+                    <div class="defender-card weak">
+                        <div class="priority-indicator">MÁS SÓLIDO</div>
+                        <div class="defender-name">E. Gnemmi (RCB)</div>
+                        <div class="defender-stats">
+                            <div class="stat-row">
+                                <span>Duelos Aéreos:</span>
+                                <span>64.8% ⚠️</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Duelos Terrestres:</span>
+                                <span>61.6%</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Balones Perdidos:</span>
+                                <span>8.4/partido 🚨</span>
+                            </div>
+                        </div>
+                        <div class="sample-warning">⚠️ Solo 11 partidos</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Comparativa Aérea Detallada -->
+        <div class="card full-width">
+            <h3>✈️ Análisis Comparativo: Duelos Aéreos</h3>
+            <div class="key-metrics">
+                <div class="metric-card" style="background: #ff4757; color: white;">
+                    <div class="metric-title" style="color: white; opacity: 0.9;">A. Vera - MÁS VULNERABLE</div>
+                    <div class="metric-value">53.7%</div>
+                </div>
+                <div class="metric-card" style="background: #ff4757; color: white;">
+                    <div class="metric-title" style="color: white; opacity: 0.9;">D. Guevara - CRÍTICO</div>
+                    <div class="metric-value">54.8%</div>
+                </div>
+                <div class="metric-card" style="background: #667eea; color: white;">
+                    <div class="metric-title" style="color: white; opacity: 0.9;">J. Alegría - ATACANTE</div>
+                    <div class="metric-value">24.0%</div>
+                </div>
+                <div class="metric-card" style="background: #ffa726; color: white;">
+                    <div class="metric-title" style="color: white; opacity: 0.9;">G. Villarreal - DÉBIL</div>
+                    <div class="metric-value">64.4%</div>
+                </div>
+                <div class="metric-card" style="background: #26de81; color: white;">
+                    <div class="metric-title" style="color: white; opacity: 0.9;">E. Gnemmi - RESISTENTE</div>
+                    <div class="metric-value">64.8%</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="aerialComparison"></canvas>
+            </div>
+        </div>
+        
+        <!-- Plan Táctico Específico -->
+        <div class="card full-width">
+            <h3>🗺️ Plan Táctico por Defensor</h3>
+            <div class="tactical-grid">
+                <div class="tactical-card priority-high">
+                    <h4>🎯 OBJETIVO PRIMARIO</h4>
+                    <div class="target-name">A. Vera (LCB)</div>
+                    <div class="tactical-list">
+                        <p><strong>VULNERABILIDADES:</strong></p>
+                        <p>• 53.7% duelos aéreos (CRÍTICO)</p>
+                        <p>• 58.3% duelos terrestres</p>
+                        <p>• 6.6 balones perdidos/partido</p>
+                        
+                        <p style="margin-top: 12px;"><strong>ESTRATEGIA:</strong></p>
+                        <p>• Centros sistemáticos a su zona</p>
+                        <p>• Balones largos directos</p>
+                        <p>• Aprovechar físico de Alegría</p>
+                        <p>• ⚠️ Verificar tendencias (10 partidos)</p>
+                    </div>
+                </div>
+                
+                <div class="tactical-card priority-medium">
+                    <h4>⚠️ OBJETIVO SECUNDARIO</h4>
+                    <div class="target-name">D. Guevara (LCB)</div>
+                    <div class="tactical-list">
+                        <p><strong>VULNERABILIDADES:</strong></p>
+                        <p>• 54.8% duelos aéreos (CRÍTICO)</p>
+                        <p>• 58.2% duelos terrestres</p>
+                        <p>• Datos muy confiables (20 partidos)</p>
+                        
+                        <p style="margin-top: 12px;"><strong>ESTRATEGIA:</strong></p>
+                        <p>• Centros cruzados al área</p>
+                        <p>• Juego aéreo constante</p>
+                        <p>• Presión en salida de balón</p>
+                        <p>• ✅ Patrón confirmado estadísticamente</p>
+                    </div>
+                </div>
+                
+                <div class="tactical-card priority-low">
+                    <h4>🔄 OBJETIVO TERCIARIO</h4>
+                    <div class="target-name">G. Villarreal (RCB)</div>
+                    <div class="tactical-list">
+                        <p><strong>ANÁLISIS:</strong></p>
+                        <p>• 64.4% duelos aéreos (mejorable)</p>
+                        <p>• 60.8% duelos terrestres</p>
+                        <p>• 21 partidos - datos sólidos</p>
+                        
+                        <p style="margin-top: 12px;"><strong>ESTRATEGIA:</strong></p>
+                        <p>• Balones altos ocasionales</p>
+                        <p>• Presión en construcción</p>
+                        <p>• Movimientos de distracción</p>
+                        <p>• Enfocar en Vera/Guevara primero</p>
+                    </div>
+                </div>
+                
+                <div class="tactical-card priority-lowest">
+                    <h4>✅ MÁS RESISTENTE</h4>
+                    <div class="target-name">E. Gnemmi (RCB/RB)</div>
+                    <div class="tactical-list">
+                        <p><strong>ANÁLISIS:</strong></p>
+                        <p>• 64.8% duelos aéreos (sólido)</p>
+                        <p>• 61.6% duelos terrestres</p>
+                        <p>• PERO: 8.4 balones perdidos/partido 🔥</p>
+                        
+                        <p style="margin-top: 12px;"><strong>ESTRATEGIA:</strong></p>
+                        <p>• Pressing alto intenso</p>
+                        <p>• Forzar errores en salida</p>
+                        <p>• Evitar duelos aéreos directos</p>
+                        <p>• Aprovechar pérdidas de balón</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Estadísticas Avanzadas -->
+        <div class="grid">
+            <div class="card">
+                <h3>📊 Métricas Defensivas Comparadas</h3>
+                <div class="chart-container">
+                    <canvas id="defensiveMetrics"></canvas>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>🔥 Análisis de Presión y Errores</h3>
+                <div class="chart-container">
+                    <canvas id="pressureAnalysis"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Insights Tácticos Actualizados -->
+        <div class="insight">
+            <h4>🧠 Insights Tácticos Clave</h4>
+            <div class="recommendations">
+                <div class="recommendation">
+                    <strong>🎯 Diferencias Aéreas AMPLIAS</strong>
+                    Vera/Guevara ~55% vs Alegría 24% = +30 puntos diferencia crítica.
+                    <em>Táctica: Centros sistemáticos muy efectivos por gran diferencia.</em>
+                </div>
+                <div class="recommendation">
+                    <strong>✅ Alegría MÁS Versátil</strong>
+                    55.7% regates exitosos (no es debilidad como se pensaba).
+                    <em>Táctica: Puede jugar asociativo en espacios reducidos también.</em>
+                </div>
+                <div class="recommendation">
+                    <strong>🚫 Alegría Sigue siendo Finalizador</strong>
+                    Solo 0.06 asistencias/partido. Es rematador, no creador.
+                    <em>Táctica: Servir balones al área, no esperar juego combinativo.</em>
+                </div>
+                <div class="recommendation">
+                    <strong>🔥 Presionar a Gnemmi</strong>
+                    Aunque sólido aéreo (64.8%), pierde 8.4 balones/partido.
+                    <em>Táctica: Pressing alto cuando Gnemmi controla balón.</em>
+                </div>
+                <div class="recommendation">
+                    <strong>✅ Guevara = Mejor Objetivo</strong>
+                    20 partidos confirman patrón (vs 10 de Vera). Datos más confiables.
+                    <em>Táctica: Enfocar estrategia principal en Guevara.</em>
+                </div>
+                <div class="recommendation">
+                    <strong>🎪 Especializar por Banda</strong>
+                    Vera y Guevara (LCB) más vulnerables que Villarreal/Gnemmi (RCB).
+                    <em>Táctica: Centros desde banda derecha hacia zona izquierda.</em>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Resumen Ejecutivo -->
+        <div class="execution-summary">
+            <h3>📋 Plan de Ejecución Táctico</h3>
+            <div class="execution-grid">
+                <div class="execution-card">
+                    <h4>🎯 ALEGRÍA (119 partidos)</h4>
+                    <p>• Finalizador puro especializado</p>
+                    <p>• DIFERENCIA AÉREA CRÍTICA: 24% vs 55-65% defensores</p>
+                    <p>• VERSÁTIL: 55.7% regates (no es debilidad)</p>
+                    <p>• Servir balones directos al área</p>
+                    <p>• Puede jugar asociativo también</p>
+                </div>
+                <div class="execution-card">
+                    <h4>🚨 VERA - PRIORIDAD MÁXIMA</h4>
+                    <p>• 53.7% duelos aéreos (MUY VULNERABLE)</p>
+                    <p>• +29.7 puntos vs Alegría (24%)</p>
+                    <p>• LCB - atacar desde derecha</p>
+                    <p>• Centros sistemáticos muy efectivos</p>
+                    <p>• ⚠️ Confirmar patrón (solo 10 partidos)</p>
+                </div>
+                <div class="execution-card">
+                    <h4>⚠️ GUEVARA - OBJETIVO PRIMARIO</h4>
+                    <p>• 54.8% duelos aéreos (CRÍTICO)</p>
+                    <p>• +30.8 puntos vs Alegría (24%)</p>
+                    <p>• 20 partidos = patrón confirmado</p>
+                    <p>• LCB - centros desde banda derecha</p>
+                    <p>• Objetivo más confiable estadísticamente</p>
+                </div>
+                <div class="execution-card">
+                    <h4>🔄 VILLARREAL + GNEMMI</h4>
+                    <p>• Ambos ~65% aéreo (más resistentes)</p>
+                    <p>• Gnemmi: presión en salida (8.4 pérdidas)</p>
+                    <p>• Villarreal: pressing ocasional</p>
+                    <p>• Enfocar en Vera/Guevara primero</p>
+                    <p>• RCBs - menos prioritarios inicialmente</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Configuración global Chart.js
+        Chart.defaults.font.family = 'Segoe UI';
+        Chart.defaults.responsive = true;
+        Chart.defaults.maintainAspectRatio = false;
+        
+        // 1. Perfil de Alegría
+        const alegriaCtx = document.getElementById('alegriaProfile').getContext('2d');
+        new Chart(alegriaCtx, {
+            type: 'radar',
+            data: {
+                labels: ['Finalización', 'Físico/Aéreo', 'Precisión Tiro', 'Creación', 'Regates', 'Posicionamiento'],
+                datasets: [{
+                    label: 'J. Alegría (CF)',
+                    data: [75, 45, 46, 12, 56, 70], // Actualizado: aéreo 45 (vs defensores), regates 56
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        
+        // 2. Comparación Aérea
+        const aerialCtx = document.getElementById('aerialComparison').getContext('2d');
+        new Chart(aerialCtx, {
+            type: 'bar',
+            data: {
+                labels: ['A. Vera\n(10 partidos)', 'D. Guevara\n(20 partidos)', 'J. Alegría\n(Atacante)', 'G. Villarreal\n(21 partidos)', 'E. Gnemmi\n(11 partidos)'],
+                datasets: [{
+                    label: 'Duelos Aéreos %',
+                    data: [53.7, 54.8, 24.0, 64.4, 64.8], // Corregido: Alegría 24.0%
+                    backgroundColor: [
+                        '#ff4757', // Vera - crítico
+                        '#ff4757', // Guevara - crítico  
+                        '#667eea', // Alegría - atacante
+                        '#ffa726', // Villarreal - débil
+                        '#26de81'  // Gnemmi - sólido
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function(context) {
+                                const labels = [
+                                    'MUY VULNERABLE - Objetivo Primario (+29.7 vs Alegría)',
+                                    'CRÍTICO - Datos Confiables (+30.8 vs Alegría)', 
+                                    'Atacante - Diferencia de 30+ puntos con defensores',
+                                    'DÉBIL - Explotable (+40.4 vs Alegría)',
+                                    'MÁS RESISTENTE - Diferencia +40.8 vs Alegría'
+                                ];
+                                return labels[context.dataIndex];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 80,
+                        title: {
+                            display: true,
+                            text: 'Efectividad en Duelos Aéreos (%)'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 3. Métricas Defensivas
+        const defensiveCtx = document.getElementById('defensiveMetrics').getContext('2d');
+        new Chart(defensiveCtx, {
+            type: 'radar',
+            data: {
+                labels: ['Duelos Aéreos', 'Duelos Terrestres', 'Precisión Pases', 'Interceptaciones', 'Estabilidad (100-Pérdidas)'],
+                datasets: [
+                    {
+                        label: 'A. Vera',
+                        data: [53.7, 58.3, 85, 45, 34], // 100 - 6.6 balones perdidos = estabilidad
+                        borderColor: '#ff4757',
+                        backgroundColor: 'rgba(255, 71, 87, 0.1)',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'D. Guevara', 
+                        data: [54.8, 58.2, 85.6, 35, 42], // 100 - 5.8
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'G. Villarreal',
+                        data: [64.4, 60.8, 86.1, 38, 34], // 100 - 6.6
+                        borderColor: '#ffa726',
+                        backgroundColor: 'rgba(255, 167, 38, 0.1)',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'E. Gnemmi',
+                        data: [64.8, 61.6, 84.7, 48, 16], // 100 - 8.4 = muy inestable
+                        borderColor: '#26de81',
+                        backgroundColor: 'rgba(38, 222, 129, 0.1)',
+                        borderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: { 
+                        position: window.innerWidth < 768 ? 'bottom' : 'top'
+                    }
+                }
+            }
+        });
+        
+        // 4. Análisis de Presión
+        const pressureCtx = document.getElementById('pressureAnalysis').getContext('2d');
+        new Chart(pressureCtx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'A. Vera (10p)',
+                    data: [{x: 6.6, y: 53.7}],
+                    backgroundColor: '#ff4757',
+                    pointRadius: 12
+                }, {
+                    label: 'D. Guevara (20p)',
+                    data: [{x: 5.8, y: 54.8}],
+                    backgroundColor: '#e74c3c', 
+                    pointRadius: 15 // Más grande por confiabilidad
+                }, {
+                    label: 'G. Villarreal (21p)',
+                    data: [{x: 6.6, y: 64.4}],
+                    backgroundColor: '#ffa726',
+                    pointRadius: 15
+                }, {
+                    label: 'E. Gnemmi (11p)',
+                    data: [{x: 8.4, y: 64.8}],
+                    backgroundColor: '#26de81',
+                    pointRadius: 12
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Balones Perdidos por Partido'
+                        },
+                        min: 4,
+                        max: 10
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Efectividad Duelos Aéreos (%)'
+                        },
+                        min: 45,
+                        max: 70
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.parsed.y}% aéreos, ${context.parsed.x} pérdidas/partido`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Animaciones de entrada escalonadas mejoradas
+        document.addEventListener('DOMContentLoaded', function() {
+            // Progressive loading animation
+            const elements = document.querySelectorAll('.card, .insight, .warning-banner, .priority-banner, .execution-summary');
+            
+            // Set initial state
+            elements.forEach((el, index) => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(30px)';
+                el.style.transition = 'none';
+            });
+            
+            // Animate in sequence with stagger
+            elements.forEach((el, index) => {
+                setTimeout(() => {
+                    el.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, index * 120); // Slightly slower stagger for better effect
+            });
+            
+            // Animate defender cards separately for better effect
+            setTimeout(() => {
+                const defenderCards = document.querySelectorAll('.defender-card');
+                defenderCards.forEach((card, index) => {
+                    card.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        card.style.transition = 'transform 0.4s ease';
+                        card.style.transform = 'scale(1)';
+                    }, index * 100);
+                });
+            }, 800);
+            
+            // Animate tactical cards
+            setTimeout(() => {
+                const tacticalCards = document.querySelectorAll('.tactical-card');
+                tacticalCards.forEach((card, index) => {
+                    card.style.transform = 'scale(0.98) rotateX(5deg)';
+                    setTimeout(() => {
+                        card.style.transition = 'transform 0.5s ease';
+                        card.style.transform = 'scale(1) rotateX(0deg)';
+                    }, index * 150);
+                });
+            }, 1200);
+        });
+        
+        // Enhanced mobile touch interactions
+        if (window.innerWidth <= 768) {
+            document.addEventListener('DOMContentLoaded', function() {
+                // Add touch feedback for cards
+                const touchElements = document.querySelectorAll('.card, .defender-card, .tactical-card');
+                
+                touchElements.forEach(element => {
+                    element.addEventListener('touchstart', function() {
+                        this.style.transform = 'scale(0.98)';
+                    });
+                    
+                    element.addEventListener('touchend', function() {
+                        setTimeout(() => {
+                            this.style.transform = 'scale(1)';
+                        }, 100);
+                    });
+                });
+            });
+        }
+        
+        // Responsive chart adjustments
+        function adjustChartsForMobile() {
+            Chart.helpers.each(Chart.instances, function(instance) {
+                if (window.innerWidth < 768) {
+                    // Mobile adjustments
+                    if (instance.config.options.plugins && instance.config.options.plugins.legend) {
+                        instance.config.options.plugins.legend.position = 'bottom';
+                        instance.config.options.plugins.legend.labels = {
+                            ...instance.config.options.plugins.legend.labels,
+                            fontSize: 10,
+                            padding: 8,
+                            usePointStyle: true,
+                            boxWidth: 12
+                        };
+                    }
+                    
+                    // Adjust font sizes for mobile
+                    if (instance.config.options.scales) {
+                        Object.keys(instance.config.options.scales).forEach(scaleKey => {
+                            const scale = instance.config.options.scales[scaleKey];
+                            if (scale.title) {
+                                scale.title.font = { size: 10 };
+                            }
+                            if (scale.ticks) {
+                                scale.ticks.font = { size: 9 };
+                            }
+                        });
+                    }
+                    
+                    // For radar charts, adjust scale
+                    if (instance.config.type === 'radar' && instance.config.options.scales && instance.config.options.scales.r) {
+                        instance.config.options.scales.r.pointLabels = {
+                            font: { size: 10 }
+                        };
+                    }
+                } else {
+                    // Desktop adjustments
+                    if (instance.config.options.plugins && instance.config.options.plugins.legend) {
+                        instance.config.options.plugins.legend.position = 'top';
+                        instance.config.options.plugins.legend.labels = {
+                            ...instance.config.options.plugins.legend.labels,
+                            fontSize: 12,
+                            padding: 12,
+                            usePointStyle: false,
+                            boxWidth: 20
+                        };
+                    }
+                    
+                    // Reset font sizes for desktop
+                    if (instance.config.options.scales) {
+                        Object.keys(instance.config.options.scales).forEach(scaleKey => {
+                            const scale = instance.config.options.scales[scaleKey];
+                            if (scale.title) {
+                                scale.title.font = { size: 12 };
+                            }
+                            if (scale.ticks) {
+                                scale.ticks.font = { size: 11 };
+                            }
+                        });
+                    }
+                    
+                    if (instance.config.type === 'radar' && instance.config.options.scales && instance.config.options.scales.r) {
+                        instance.config.options.scales.r.pointLabels = {
+                            font: { size: 12 }
+                        };
+                    }
+                }
+                instance.update('none'); // Update without animation for better performance
+            });
+        }
+        
+        // Debounced resize handler for better performance
+        let resizeTimeout;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(adjustChartsForMobile, 250);
+        });
+        
+        // Initial mobile adjustment
+        adjustChartsForMobile();
+    </script>
+</body>
+</html>
